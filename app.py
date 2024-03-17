@@ -18,7 +18,6 @@ load_dotenv()
 # Access your API key
 s3_key_id = os.getenv("S3_KEY_ID")
 s3_secret_key = os.getenv("S3_SECRET_KEY")
-print(s3_key_id)
 
 #from flask_wtf import FlaskForm
 #from wtforms import FileField, SubmitField
