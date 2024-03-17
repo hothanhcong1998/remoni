@@ -13,7 +13,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # Load environment variables from .env
-load_dotenv()
+#load_dotenv()
 
 # Access your API key
 s3_key_id = os.getenv("S3_KEY_ID")
@@ -33,10 +33,16 @@ s3_client = boto3.client(
     aws_secret_access_key=s3_secret_key
 )
 
+<<<<<<< HEAD
+=======
+print('Starting the server')
+
+>>>>>>> a934aac8a221879a87ad23b98539e214dbc23738
 @app.route('/')
 def index_get():
     #return 'Hi'
     return render_template('doctor.html')
+    #return 'Hi'
 
 def get_raw_data_from_s3(key):
     #key = '00001/time_series/11.csv' # this is the path to save data inside the above bucket
@@ -98,7 +104,7 @@ def chat():
     #agent.intent_dict['patient_id'] = '00001'
     agent.patient_id = '00001'
     agent.check_and_update_patient_id() # check and update patient id #TODO: integrate this function into front-end
-    
+    agent.show_data_list=[]
     ################################
     ########## VITAL SIGN ##########
     ################################
@@ -200,4 +206,4 @@ def chat():
 '''
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8082, debug=True)
+    app.run(host='0.0.0.0', port=8080)
