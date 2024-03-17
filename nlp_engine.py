@@ -56,14 +56,14 @@ class nlp_engine():
             return self.image_description
         for image_path in image_path_list:
             if not os.path.exists(image_path):
-                return False
+                return 'Can not find image'
 
         image_description = gpt(
             text = INPUT_VISION,
             model_name="gpt-4-vision-preview", 
             image_path = image_path_list, ############################# TODO: change image path  ############################
             system_prompt = SYSTEM_PROMPT_VISION,
-            temperature = 0.2
+            temperature = 0.4
         ) 
         self.image_description = image_description
         return self.image_description

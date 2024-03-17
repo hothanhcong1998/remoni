@@ -18,6 +18,8 @@ class Chatbox {
         const node = chatBox.querySelector('.text_input');
 
         node.addEventListener("keyup", ({ key }) => {
+            event.preventDefault();  // Prevent the form from causing a page refresh
+            
             if (key === "Enter") {
                 this.onSendButton(chatBox);
             }
@@ -110,7 +112,10 @@ class Chatbox {
 
         const chatmessage = chatbox.querySelector('.chatbox__messages');
         chatmessage.innerHTML = html;
-        
+        const isScrolledToBottom = chatmessage.scrollHeight - chatmessage.clientHeight <= chatmessage.scrollTop + 1;
+        if (isScrolledToBottom) {
+        chatmessage.scrollTop = chatmessage.scrollHeight;
+        }
     }
 }
 

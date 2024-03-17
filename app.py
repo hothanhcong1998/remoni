@@ -88,6 +88,13 @@ def get_data_from_edge(type_of_data: str):
         if instant_data:
             break
     
+    try:
+        # Delete the file from the S3 bucket
+        s3.delete_object(Bucket='remoni', Key=received_key)
+        print(f"File '{file_key}' deleted successfully from bucket '{bucket_name}'")
+    except Exception as e:
+        print(f"Error deleting file '{file_key}' from bucket '{bucket_name}': {str(e)}")
+    
     return instant_data
 
 
@@ -102,6 +109,7 @@ def chat():
     agent.patient_id = '00001'
     agent.check_and_update_patient_id() # check and update patient id #TODO: integrate this function into front-end
     agent.show_data_list=[]
+    
     ################################
     ########## VITAL SIGN ##########
     ################################
