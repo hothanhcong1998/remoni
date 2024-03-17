@@ -10,6 +10,16 @@ from config import vital_sign_var_to_text
 from utils import *
 import time
 import pandas as pd 
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
+
+# Access your API key
+s3_key_id = os.getenv("S3_KEY_ID")
+s3_secret_key = os.getenv("S3_SECRET_KEY")
+print(s3_key_id)
+
 #from flask_wtf import FlaskForm
 #from wtforms import FileField, SubmitField
 #from werkzeug.utils import secure_filename
@@ -37,8 +47,7 @@ agent = nlp_engine()
 received_data = None
 temp_img_path = './static/local_data/show_data/temp.jpg'
 
-s3_key_id = 'AKIA5FTZCCIL4PNVQ6GA'
-s3_secret_key = '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'
+
 bucket_name = 'remoni'
 s3_client = boto3.client( 
     service_name='s3',
@@ -55,7 +64,7 @@ def get_raw_data_from_s3(key):
     # get data from AWS S3
     print('=========KEY S3==========')
     print(key)
-    
+
     obj = s3_client.get_object(Bucket=bucket_name, Key=key)
     data = obj['Body'].read()
     return data
