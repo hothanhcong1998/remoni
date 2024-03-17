@@ -19,28 +19,6 @@ load_dotenv()
 s3_key_id = os.getenv("S3_KEY_ID")
 s3_secret_key = os.getenv("S3_SECRET_KEY")
 
-#from flask_wtf import FlaskForm
-#from wtforms import FileField, SubmitField
-#from werkzeug.utils import secure_filename
-#from wtforms.validators import InputRequired
-#import os 
-#import glob
-#import json 
-#import numpy as np
-#import pandas as pd
-#from chat_museum import get_response
-
-#import torch 
-#import cv2
-#from conversation import conv_templates, SeparatorStyle
-#import requests
-#import shutil
-#from gtts import gTTS
-#from pydub import AudioSegment
-#from pydub.playback import play
-#from pydub.effects import speedup
-#from playsound import playsound
-
 app = Flask(__name__)
 agent = nlp_engine()
 received_data = None
@@ -54,8 +32,10 @@ s3_client = boto3.client(
     aws_access_key_id=s3_key_id,
     aws_secret_access_key=s3_secret_key
 )
+
 @app.route('/')
 def index_get():
+    #return 'Hi'
     return render_template('doctor.html')
 
 def get_raw_data_from_s3(key):
@@ -69,8 +49,12 @@ def get_raw_data_from_s3(key):
     return data
 
 def get_data_from_s3(key, type_of_data:str):
-    raw_data = get_raw_data_from_s3(key)
+    # download data
+    try:
+        raw_data = get_raw_data_from_s3(key)
+    except: return None
 
+    # process the raw data based on type_of_data
     if type_of_data == 'vital_sign':
         data_decoded = raw_data.decode('utf-8')
         df = pd.read_csv(StringIO(data_decoded))
@@ -86,36 +70,22 @@ def get_data_from_s3(key, type_of_data:str):
         image.save(image_path)
         return image_path
 
-
 def get_data_from_edge(type_of_data: str):
-    global received_data
-    # Send a signal to the local server via S3 to send real-time data
+    # Send a signal to the local server via S3 to request real-time data
     s3_client.put_object(Body=type_of_data, Bucket=bucket_name, Key='signal_file.txt')
-
-    # Wait for the data to be sent back from the local server
-    while received_data is None: #TODO: after a period of time, stop waiting and annouce that we can not take data from edge device
-        time.sleep(1)  # Poll every 1 second
     
-    # Retrieve the received data and reset the variable for future requests
-    data = received_data
+    # Waiting for edge device to update data to S3
     if type_of_data == 'vital_sign':
-        data = pd.read_csv(file)
-    elif type_of_data == 'image': 
-        # Create directories if they don't exist
-        os.makedirs(os.path.dirname(temp_img_path), exist_ok=True)
-        # Save the image, replacing it if it already exists
-        data.save(temp_img_path)
-        data = temp_img_path
-    received_data = None
-    return data
+        received_key = 'real_time_data.csv'
+    elif type_of_data == 'image':
+        received_key = 'instant.jpg'
 
-@app.route('/data-receiver', methods=['POST'])
-def data_receiver():
-    global received_data
-    if 'file' in request.files:
-        received_data = request.files['file']
-        return 'Data received', 200
-    else: 'No data found', 400
+    while True:
+        instant_data = get_data_from_s3(received_key, type_of_data)
+        if instant_data:
+            break
+    
+    return instant_data
 
 
 @app.route("/chat", methods=['POST'])
@@ -175,7 +145,7 @@ def chat():
         image_path_list = []
         if (len(agent.intent_dict['list_date']) == 0) and (len(agent.intent_dict['list_time']) == 0): 
             image_path = get_data_from_edge('image') # already save data to temp_img_path
-            image_path_list.append(image_path_list)
+            image_path_list.append(image_path)
             
         ########## get historical data from the AWS S3 ##########
         else: 
