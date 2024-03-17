@@ -33,11 +33,8 @@ s3_client = boto3.client(
     aws_secret_access_key=s3_secret_key
 )
 
-<<<<<<< HEAD
-=======
-print('Starting the server')
 
->>>>>>> a934aac8a221879a87ad23b98539e214dbc23738
+print('Starting the server')
 @app.route('/')
 def index_get():
     #return 'Hi'
