@@ -30,7 +30,7 @@ class Chatbox {
             "Hello! My name is REMONI. I am your virtual nurse.",
             "How can I help you?"
         ];
-        /*
+        
         let index = 0;
         const displayNextMessage = () => {
             if (index < description.length) {
@@ -41,7 +41,7 @@ class Chatbox {
             }
         };
         displayNextMessage();
-        */
+        
     }
 
     onSendButton(chatbox) {

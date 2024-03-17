@@ -1,10 +1,11 @@
 import base64
 import requests
 from openai import OpenAI
+import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env
-load_dotenv()
+#load_dotenv()
 # Access your API key
 api_key = os.getenv("OPENAI_KEY")
 
