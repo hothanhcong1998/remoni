@@ -44,6 +44,17 @@ class Chatbox {
         };
         displayNextMessage();
         
+        // Connect to the WebSocket server
+        const socket = io();
+
+        // Listen for the fall_alert event
+        socket.on('fall_alert', (data) => {
+            //alert(data.message); // Show an alert with the message
+            // Or you can update the chatbox with the message
+            console.log(data.message)
+            this.messages.push({ name: "REMONI", message: data.message });
+            this.updateChatText(chatBox);
+        });
     }
 
     onSendButton(chatbox) {
@@ -89,6 +100,7 @@ class Chatbox {
             this.updateChatText(chatbox);
             textField.value = ''
           });
+          
     }
     
 

@@ -1,4 +1,6 @@
+
 from flask import Flask, render_template, redirect, url_for, request, jsonify
+from flask_socketio import SocketIO
 from nlp_engine import nlp_engine
 import boto3
 from utils import df_to_text
@@ -20,6 +22,7 @@ s3_key_id = os.getenv("S3_KEY_ID")
 s3_secret_key = os.getenv("S3_SECRET_KEY")
 
 app = Flask(__name__)
+socketio = SocketIO(app, async_mode='eventlet')
 agent = nlp_engine()
 received_data = None
 temp_img_path = './static/local_data/show_data/temp.jpg'
@@ -41,22 +44,47 @@ def index_get():
     return render_template('doctor.html')
     #return 'Hi'
 
+@app.route("/fall_signal", methods=['POST'])
+def fall_signal():
+    # Emit a message to all connected clients
+    socketio.emit('fall_alert', {'message': 'The patient has fallen'})
+    return jsonify({'status': 'success'})
+
 def get_raw_data_from_s3(key):
     #key = '00001/time_series/11.csv' # this is the path to save data inside the above bucket
     # get data from AWS S3
     print('=========KEY S3==========')
     print(key)
-
+    
     obj = s3_client.get_object(Bucket=bucket_name, Key=key)
     data = obj['Body'].read()
+    #print(data)
     return data
 
 def get_data_from_s3(key, type_of_data:str):
     # download data
     try:
-        raw_data = get_raw_data_from_s3(key)
-    except: return None
+        #raw_data = get_raw_data_from_s3(key)
+        obj = s3_client.get_object(Bucket=bucket_name, Key=key)
+        raw_data = obj['Body'].read()
+        print('getting raw data')
+        # process the raw data based on type_of_data
+        if type_of_data == 'vital_sign':
+            data_decoded = raw_data.decode('utf-8')
+            df = pd.read_csv(StringIO(data_decoded))
+            return df
 
+        elif type_of_data == 'image':
+            from PIL import Image
+            import io
+            data_decoded = io.BytesIO(raw_data)
+            # Open the image using Pillow and convert it to RGB
+            image = Image.open(data_decoded).convert('RGB') # PIL Image object
+            image_path = get_serial_path('./static/local_data/show_data/')
+            image.save(image_path)
+            return image_path
+    except: return None
+    """
     # process the raw data based on type_of_data
     if type_of_data == 'vital_sign':
         data_decoded = raw_data.decode('utf-8')
@@ -72,7 +100,7 @@ def get_data_from_s3(key, type_of_data:str):
         image_path = get_serial_path('./static/local_data/show_data/')
         image.save(image_path)
         return image_path
-
+    """
 def get_data_from_edge(type_of_data: str):
     # Send a signal to the local server via S3 to request real-time data
     s3_client.put_object(Body=type_of_data, Bucket=bucket_name, Key='signal_file.txt')
@@ -82,18 +110,29 @@ def get_data_from_edge(type_of_data: str):
         received_key = 'real_time_data.csv'
     elif type_of_data == 'image':
         received_key = 'instant.jpg'
-
-    while True:
-        instant_data = get_data_from_s3(received_key, type_of_data)
-        if instant_data:
-            break
     
+    i = 0
+    while True:
+        #try:
+        print('connecting to s3')
+        instant_data = get_data_from_s3(received_key, type_of_data)
+        print(instant_data)
+        if isinstance(instant_data, pd.DataFrame): break
+        elif isinstance(instant_data, str): break
+        time.sleep(3)    
+        #except:
+        #    time.sleep(1)
+        #    i+=1
+        #    print(i)
+        #    if i==60: break
+
+
     try:
         # Delete the file from the S3 bucket
-        s3.delete_object(Bucket='remoni', Key=received_key)
-        print(f"File '{file_key}' deleted successfully from bucket '{bucket_name}'")
+        s3_client.delete_object(Bucket='remoni', Key=received_key)
+        print(f"File '{received_key}' deleted successfully")
     except Exception as e:
-        print(f"Error deleting file '{file_key}' from bucket '{bucket_name}': {str(e)}")
+        print(f"Error deleting file '{received_key}': {str(e)}")
     
     return instant_data
 
@@ -173,9 +212,9 @@ def chat():
                     
         
         # check if the question asks for showing images
-            if agent.intent_dict['is_image']:
-                agent.show_data_list = image_path_list
-
+        if agent.intent_dict['is_image']:
+            agent.show_data_list = image_path_list
+            print(agent.show_data_list)
         ########## RECOGNITION ##########
         if agent.intent_dict['recognition']:
             agent.vision_llm(image_path_list)
@@ -211,4 +250,5 @@ def chat():
 '''
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    #app.run(host='0.0.0.0', port=8080)
+    socketio.run(app, host='0.0.0.0', port=8080)
