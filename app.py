@@ -42,12 +42,12 @@ print('Starting the server')
 def index_get():
     #return 'Hi'
     return render_template('doctor.html')
-    #return 'Hi'
 
 @app.route("/fall_signal", methods=['POST'])
 def fall_signal():
     # Emit a message to all connected clients
-    socketio.emit('fall_alert', {'message': 'The patient has fallen'})
+    noti = request.get_json().get("anomaly")
+    socketio.emit('fall_alert', {'message': noti})
     return jsonify({'status': 'success'})
 
 def get_raw_data_from_s3(key):
