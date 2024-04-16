@@ -69,7 +69,7 @@ class Chatbox {
         this.updateChatText(chatbox);
         textField.value = '';
         //'http://127.0.0.1:5000/doctor/chat'
-        fetch($SCRIPT_ROOT + '/chat_doctor', {
+        fetch($SCRIPT_ROOT + '/chat_patient', {
             method: 'POST',
             body: JSON.stringify({ message: text1 }),
             mode: 'cors',

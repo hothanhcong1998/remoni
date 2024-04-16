@@ -1,16 +1,16 @@
-
 import os
 import pandas as pd
 import json
 from datetime import datetime
-from config_nlp_engine import SYSTEM_PROMPT_INTENT_DETECTION, \
-                              SYSTEM_PROMPT_VISION, \
-                              SYSTEM_PROMPT_ENDPOINT, \
-                              TEXT_ENDPOINT_FORMAT, \
-                              INPUT_VISION
+from config_nlp_engine_new import SYSTEM_PROMPT_INTENT_DETECTION, \
+                                  SYSTEM_PROMPT_VISION, \
+                                  SYSTEM_PROMPT_ENDPOINT, \
+                                  TEXT_ENDPOINT_FORMAT, \
+                                  SYSTEM_PROMPT_MEDICAL, \
+                                  INPUT_VISION
 
 from utils import *
-from request_to_openai import gpt
+from request_to_openai import gpt, gpt_med
 
 system_prompt_intent_detection = SYSTEM_PROMPT_INTENT_DETECTION #.format(current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 system_prompt_vision = SYSTEM_PROMPT_VISION
@@ -95,6 +95,18 @@ class nlp_engine():
         )
         return output
 
+    def patient_llm(self, patient_conv):
+        print('=========PATIENT-SIDE INTERACTION==========')
+        #print(patient_conv)
+
+        output = gpt_med(
+            system_prompt=SYSTEM_PROMPT_MEDICAL, 
+            text=patient_conv, 
+            model_name="gpt-3.5-turbo", 
+            temperature=0.2
+        )
+        return output
+
     # check if the id_str is a valid patient id
     def _is_valid_id(self):
         if bool(re.match(r'^\d{5}$', self.intent_dict['patient_id'])): #check if the id_str follow id format
@@ -128,11 +140,12 @@ class nlp_engine():
         else:
             # check if self.patient_id is null
             if not self.patient_id:
-                new_id = self._ask_for_id()
-                if not new_id: return False  # if the user cannot provide a valid patient_id, the session will stop
-                else: 
-                    self.patient_id = new_id
-                    self.intent_dict['patient_id'] = new_id
+                #new_id = self._ask_for_id()
+                return False
+                #if not new_id: return False  # if the user cannot provide a valid patient_id, the session will stop
+                #else: 
+                #    self.patient_id = new_id
+                #    self.intent_dict['patient_id'] = new_id
         return True
     
     
@@ -146,132 +159,3 @@ class nlp_engine():
         if len(self.intent_dict['list_time']) == 0:  # the patient ask for data in some day without providing the time, ex. last 3 days, last week
             self.intent_dict['list_time'] = ['01:00:00', '07:00:00', '13:00:00', '19:00:00']
                    
-
-'''
-def NLP_engine(doctor_question):
-    # initialize variables
-    image_description = 'None'
-    vital_signs_text = 'None' 
-    show_list = [] # save image_path or plot_path that would be used to shown to the user
-    
-    ################################
-    ##########   INTENT   ##########
-    ################################
-    
-    intent = gpt(system_prompt=system_prompt_intent_detection, text=doctor_question, model_name="gpt-3.5-turbo", temperature=0.1)
-    intent_dict = json.loads(intent)
-    #print(intent_dict) #debug
-    #print()
-    
-
-
-    # check the valid patient_id (did the user provide this information yet? does the id appear in the database?):
-    patient_id =  get_id(intent_dict['patient_id'], patient_meta_df)
-    
-    if not patient_id: # if the user cannot provide a valid patient_id, the session will stop
-        return "Exit", show_list
-    else: 
-        intent_dict['patient_id'] = patient_id # update the new valid patient_id into the intent_dict
-       
-    
-    ################################
-    ########## VITAL SIGN ##########
-    ################################
-    
-    if len(intent_dict['vital_sign'])>0: # check if we need to get the vital sign
-        ########## get real-time data from the EDGE DEVICE ##########
-        if (len(intent_dict['list_date']) == 0) and (len(intent_dict['list_time']) == 0): 
-            ############################# TODO: get data from EDGE DEVICE with values in keys of 'patient_id', 'vital_sign'
-            vital_sign_df = pd.read_csv('tmp/2024_03.csv') 
-            #############################
-            
-            vital_signs_text = df_to_text(vital_sign_df, intent_dict, is_current=True)
-        
-        ########## get real-time data from the AWS S3 ##########
-        else: 
-            # process some special case
-            if len(intent_dict['list_date']) == 0: # the patient ask for data in some sessions in the current day, ex. today morning, this evening
-                intent_dict['list_date'] = [datetime.now().strftime("%Y-%m-%d")]
-                #print('a')
-            if len(intent_dict['list_time']) == 0:  # the patient ask for data in some day without providing the time, ex. last 3 days, last week
-                intent_dict['list_time'] = ['08:00:00']
-                #print('b')
-            ############################# TODO: get data from S3 with values in keys of 'patient_id', 'list_date', 'list_time', 'vital_sign'
-            vital_sign_df = pd.read_csv('tmp/2024_03.csv') 
-            #############################
-            vital_signs_text = df_to_text(vital_sign_df, intent_dict, is_current=False)
-            
-
-            ########## PLOT ##########
-    
-            if intent_dict['is_plot']:
-                # TODO: draw plot function ############################
-                # use df directly to plot
-                # save plot image and add the path to show_plot_list
-                print('Plotted')
-    print(intent_dict) #DEBUG    
-    
-    ################################
-    ##########   IMAGES   ##########
-    ################################
-    
-    if intent_dict['recognition'] or intent_dict['is_image']: # check if we need to get the vital sign
-        ########## get real-time image from the EDGE DEVICE ##########
-        if len(intent_dict['list_date']) == 0 and len(intent_dict['list_time']) == 0: 
-            ############################# TODO: get image from S3
-            image_path = ['tmp/HACER_mid_frame/putonglasses_angry_7_j.png']
-            #############################
-        
-        ########## get real-time data from the AWS S3 ##########
-        else: 
-            ############################# TODO: get image from AWS S3
-            image_path = ['tmp/HACER_mid_frame/putonglasses_angry_7_j.png']
-            #############################
-            
-        ########## RECOGNITION ##########
-        if intent_dict['recognition']:
-            text_vision = "Classify the activities and emotions in this image."
-            image_description = gpt(
-                text = text_vision,
-                model_name="gpt-4-vision-preview", 
-                image_path = ['tmp/HACER_mid_frame/putonglasses_angry_7_j.png'], ############################# TODO: change image path  ############################
-                system_prompt = system_prompt_vision,
-                temperature = 0.2
-            ) 
-        
-        
-        if intent_dict['is_image']:
-            ############################# TODO: add image path to show_image_list
-            print('Showed image')
-    
-    ################################
-    #########   ENDPOINT   #########
-    ################################
-    
-    patient_info = patient_meta_df[patient_meta_df['patient_id']==int(patient_id)]
-    
-    text_endpoint = text_endpoint_format.format(current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                patient_id = patient_id,
-                                name = patient_info['name'].values[0], 
-                                sex = patient_info['sex'].values[0], 
-                                address = patient_info['address'].values[0], 
-                                phone = patient_info['phone'].values[0], 
-                                dob = patient_info['birth'].values[0], 
-                                age = patient_info['age'].values[0], 
-                                image_description = image_description, 
-                                vital_signs_data = vital_signs_text, 
-                                question = doctor_question)
-    print(text_endpoint) #DEBUG
-    print()
-    
-    output = 'Done'
-    #output = gpt(system_prompt=system_prompt_endpoint, text=text_endpoint, model_name="gpt-3.5-turbo", temperature=0.1)
-    
-    return output, show_list
-
-doctor_question = 'What is the current heart rate of the patient? 00001'
-#doctor_question = q51
-response, show_list = NLP_engine(doctor_question)
-print('==============')
-print()
-print(response) '''

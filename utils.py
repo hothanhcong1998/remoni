@@ -34,6 +34,23 @@ def get_serial_path(data_folder_path):
     return new_filepath
 
 
+def get_serial_path_plot(data_folder_path):
+    # Get a list of all files in the folder
+    files = os.listdir(data_folder_path)
+
+    # Filter out files that follow the pattern XX.jpg where XX is a number
+    image_files = [f for f in files if f.endswith('.png') and f[:-4].isdigit()]
+
+    # Extract the indices and find the maximum index
+    indices = [int(f.split('.')[0]) for f in image_files]
+    max_index = max(indices) if indices else 0
+
+    # Determine the filename for the new image
+    new_index = max_index + 1
+    new_filename = f"{new_index:02d}.png"
+    new_filepath = os.path.join(data_folder_path, new_filename)
+    return new_filepath
+
 # extract patient_id from a text by find words matching the format of the id 
 def extract_patient_id_from_text(text):
     # Regular expression pattern to match an ID like '00001'
@@ -105,7 +122,8 @@ def plot_vital_sign(df, vital_sign):
     y=df_sampled[vital_sign]
     plt.plot(x,y)
     plt.xticks(rotation=90)
-    save_path = f'./static/local_data/show_data/plot_{vital_sign}.png'
+    #save_path = f'./static/local_data/plot_{vital_sign}.png'
+    save_path = get_serial_path_plot('./static/local_data/')
     figure.savefig(save_path, bbox_inches='tight')
     return save_path
 
@@ -139,3 +157,12 @@ def process_key_to_retrieve_image(timestamp_list):
     # Convert the defaultdict to a regular dictionary
     grouped_timestamps = dict(grouped_timestamps)
     return grouped_timestamps
+
+def delete_temp_img_files(folder_path):
+    for filename in os.listdir(folder_path):
+        # Check if the file is a .png or .jpg
+        if filename.endswith('.png') or filename.endswith('.jpg'):
+            # Create the full path to the file
+            file_path = os.path.join(folder_path, filename)
+            # Remove the file
+            os.remove(file_path)

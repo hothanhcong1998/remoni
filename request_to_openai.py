@@ -86,5 +86,48 @@ def gpt(text,
     # Get response
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
     response_json = response.json()
+    #print(response_json)
+    output = response_json['choices'][0]['message']['content']
+    return output
+
+
+def gpt_med(model_name,
+            text=list(),
+            system_prompt='You are a helpful assistant.', 
+            temperature=1):
+    
+    # Request to server
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    
+    if len(text)>3:
+        text = text[-3:]
+        
+    message = [
+        {
+            "role": "system",
+            "content": system_prompt
+        }]
+    
+    for item in text:
+        message.append(
+            {
+                "role": item[0],
+                "content":  item[1]
+            })
+
+    payload = {
+        "model": model_name,
+        "messages": message,
+        "max_tokens": 300,
+        "temperature": temperature
+    }
+    
+    # Get response
+    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    response_json = response.json()
+    #print(response_json)
     output = response_json['choices'][0]['message']['content']
     return output

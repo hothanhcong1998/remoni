@@ -1,5 +1,4 @@
 
-
 vital_sign_var_to_text = {
                 'heart_rate': 'Heart Rate', 
                 'systolic_pressure': 'Systolic Pressure', 
