@@ -237,6 +237,7 @@ def chat_doctor():
     output = agent.endpoint_llm(patient_info, question)
         
     # post processing output
+    output = re.sub(r'\[.*?\]', '', output)
     output = output.split('\n\n')
     output = "<br><br>".join(output)
     output = output.split('\n')
@@ -320,7 +321,6 @@ def chat_patient():
 
 
     # post processing output
-    output = re.sub(r'\[.*?\]', '', text)
     output = output.split('\n\n')
     output = "<br><br>".join(output)
     output = output.split('\n')

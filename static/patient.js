@@ -52,7 +52,7 @@ class Chatbox {
             //alert(data.message); // Show an alert with the message
             // Or you can update the chatbox with the message
             console.log(data.message)
-            this.messages.push({ name: "REMONI", message: data.message });
+            this.messages.push({ name: "REMONI", message: "The system has detected a health emergency. A notification has already been sent to your caregiver." });
             this.updateChatText(chatBox);
         });
     }
