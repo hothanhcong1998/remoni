@@ -219,7 +219,8 @@ def chat_doctor():
                     s3_image_path = f"{agent.patient_id}/image/{s3_image_folder}/{s3_image_file}.jpg"
                     image_path = get_data_from_s3(s3_image_path, 'image')
                     image_path_list.append(image_path)
-                    
+
+        image_path_list = [x for x in image_path_list if x is not None]            
         
         # check if the question asks for showing images
         if agent.intent_dict['is_image']:
